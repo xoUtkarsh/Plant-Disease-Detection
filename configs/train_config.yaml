@@ -1,0 +1,38 @@
+# Plant Disease Detection - ML Training Pipeline Configuration
+
+experiment_name: "plant_disease_detection"
+seed: 42
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  dataset_name: "vipoooool/new-plant-diseases-dataset"
+  image_size: [224, 224]
+  batch_size: 32
+  num_workers: 4
+  val_split: 0.2
+  test_split: 0.1
+
+model:
+  backbone: "mobilenet_v3_large"  # Options: mobilenet_v3_large, resnet50, efficientnet_b0
+  pretrained: true
+  num_classes: 38
+  dropout_rate: 0.3
+
+training:
+  epochs: 25
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  lr_scheduler: "cosine"
+  warmup_epochs: 2
+  early_stopping:
+    patience: 5
+    min_delta: 0.001
+    monitor: "val_loss"
+    mode: "min"
+
+export:
+  onnx_export_path: "models/plant_disease_model.onnx"
+  torch_export_path: "models/plant_disease_model.pth"
+  opset_version: 17

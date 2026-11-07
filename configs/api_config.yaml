@@ -1,0 +1,23 @@
+# Plant Disease Detection - API & Inference Configuration
+
+app:
+  title: "Plant Disease Detection & Advisory API"
+  version: "1.0.0"
+  description: "Production REST API for rapid plant leaf disease classification and agronomist treatment advisory."
+  host: "0.0.0.0"
+  port: 8000
+  reload: false
+  workers: 1
+
+inference:
+  model_type: "pytorch"  # Options: "pytorch", "onnx"
+  model_path: "models/plant_disease_model.pth"
+  onnx_path: "models/plant_disease_model.onnx"
+  image_size: [224, 224]
+  device: "cpu"          # "cpu" or "cuda"
+  confidence_threshold: 0.35
+  top_k: 3
+
+storage:
+  allowed_extensions: [".jpg", ".jpeg", ".png", ".webp"]
+  max_upload_size_mb: 15

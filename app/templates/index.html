@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhytoAI - Production Plant Disease Detection</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .dropzone-active {
+            border-color: #059669 !important;
+            background-color: #ecfdf5 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-600 text-white p-2 rounded-xl shadow-md">
+                    <i data-lucide="sprout" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent">
+                        PhytoAI
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">Agricultural Disease Detection & Advisory</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openCatalogModal()" class="text-sm font-medium text-slate-600 hover:text-emerald-700 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    <span>38 Disease Catalog</span>
+                </button>
+                <a href="/docs" target="_blank" class="text-sm font-medium text-slate-600 hover:text-emerald-700 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="terminal" class="w-4 h-4"></i>
+                    <span>API Docs</span>
+                </a>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                    Production Ready
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Hero Header -->
+        <div class="text-center max-w-3xl mx-auto mb-8">
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                Instant Plant Pathology & Agronomic Advisory
+            </h2>
+            <p class="mt-3 text-base text-slate-600">
+                Upload or capture any crop leaf photo. Our deep learning engine identifies infections across 14 crops and provides actionable organic and chemical remedies.
+            </p>
+        </div>
+
+        <!-- Diagnostic Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left Column: Input and Upload -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="camera" class="w-5 h-5 text-emerald-600"></i>
+                        <span>Upload Leaf Image</span>
+                    </h3>
+
+                    <!-- Drag and Drop Box -->
+                    <div id="dropzone" 
+                         onclick="document.getElementById('fileInput').click()"
+                         class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-8 text-center cursor-pointer transition-all bg-slate-50/50 hover:bg-emerald-50/30 flex flex-col items-center justify-center min-h-[220px]">
+                        
+                        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleFileSelect(event)">
+                        
+                        <div id="uploadPrompt" class="flex flex-col items-center">
+                            <div class="p-3 bg-white rounded-full shadow-sm border border-slate-200 mb-3 text-emerald-600">
+                                <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                            </div>
+                            <p class="text-sm font-semibold text-slate-700">Click to browse or drag & drop</p>
+                            <p class="text-xs text-slate-500 mt-1">JPEG, PNG, or WebP up to 15MB</p>
+                        </div>
+
+                        <!-- Image Preview -->
+                        <div id="previewContainer" class="hidden w-full flex flex-col items-center">
+                            <img id="imagePreview" src="" alt="Leaf Preview" class="max-h-56 max-w-full rounded-lg object-contain shadow-sm border border-slate-200">
+                            <p id="fileNameLabel" class="text-xs text-slate-500 mt-2 font-medium truncate max-w-xs"></p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-4 flex gap-3">
+                        <button id="analyzeBtn" 
+                                onclick="runDiagnosis()" 
+                                disabled
+                                class="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+                            <span id="btnSpinner" class="hidden animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                            <i data-lucide="scan-line" id="btnIcon" class="w-5 h-5"></i>
+                            <span id="btnText">Analyze Leaf</span>
+                        </button>
+
+                        <button onclick="resetUpload()" 
+                                class="p-3 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 transition" 
+                                title="Clear Image">
+                            <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <!-- Quick Demo Samples -->
+                    <div class="mt-6 pt-5 border-t border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Or Try Sample Diagnoses:</p>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <button onclick="loadSampleImage('early_blight')" class="p-2 border border-slate-200 hover:border-emerald-500 rounded-lg text-left bg-slate-50 hover:bg-emerald-50/50 transition">
+                                <span class="font-semibold text-slate-800 block truncate">Tomato Early Blight</span>
+                                <span class="text-slate-500 text-[11px]">Concentric lesions</span>
+                            </button>
+                            <button onclick="loadSampleImage('powdery_mildew')" class="p-2 border border-slate-200 hover:border-emerald-500 rounded-lg text-left bg-slate-50 hover:bg-emerald-50/50 transition">
+                                <span class="font-semibold text-slate-800 block truncate">Squash Powdery Mildew</span>
+                                <span class="text-slate-500 text-[11px]">White fungal coat</span>
+                            </button>
+                            <button onclick="loadSampleImage('rust')" class="p-2 border border-slate-200 hover:border-emerald-500 rounded-lg text-left bg-slate-50 hover:bg-emerald-50/50 transition">
+                                <span class="font-semibold text-slate-800 block truncate">Corn Common Rust</span>
+                                <span class="text-slate-500 text-[11px]">Orange rust pustules</span>
+                            </button>
+                            <button onclick="loadSampleImage('healthy')" class="p-2 border border-slate-200 hover:border-emerald-500 rounded-lg text-left bg-slate-50 hover:bg-emerald-50/50 transition">
+                                <span class="font-semibold text-slate-800 block truncate">Healthy Leaf</span>
+                                <span class="text-emerald-600 text-[11px]">Zero pathogen signs</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Card -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-xs text-slate-500 space-y-2">
+                    <div class="flex justify-between">
+                        <span>Engine Runtime:</span>
+                        <span id="telemetryEngine" class="font-medium text-slate-800">PyTorch / MobileNetV3</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Model Latency:</span>
+                        <span id="telemetryLatency" class="font-medium text-slate-800">Ready</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Pathogen Coverage:</span>
+                        <span class="font-medium text-slate-800">38 Classes (14 Crops)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Results & Advisory -->
+            <div class="lg:col-span-7">
+                
+                <!-- Initial Placeholder State -->
+                <div id="emptyResultState" class="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center min-h-[460px]">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+                        <i data-lucide="microscope" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-lg font-bold text-slate-800">Awaiting Leaf Specimen</h4>
+                    <p class="text-sm text-slate-500 max-w-md mt-1">
+                        Select a sample leaf or upload an image from your device to trigger deep neural network disease diagnosis.
+                    </p>
+                </div>
+
+                <!-- Diagnosis Output Container -->
+                <div id="resultsCard" class="hidden space-y-6">
+                    
+                    <!-- Main Diagnostic Banner -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <div>
+                                <span id="cropBadge" class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 mb-1">
+                                    Crop: Tomato
+                                </span>
+                                <h3 id="diseaseName" class="text-2xl font-black text-slate-900">
+                                    Tomato Early Blight
+                                </h3>
+                                <p id="scientificName" class="text-xs text-slate-500 italic mt-0.5">
+                                    Pathogen: Alternaria solani
+                                </p>
+                            </div>
+
+                            <div class="flex flex-col items-end">
+                                <span id="severityBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                                    Severity: High
+                                </span>
+                                <div class="mt-2 text-right">
+                                    <span class="text-xs text-slate-500">Confidence</span>
+                                    <p id="confidenceText" class="text-xl font-black text-emerald-600">96.8%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Confidence Bar -->
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-5">
+                            <div id="confidenceBar" class="bg-emerald-600 h-2.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+                        </div>
+
+                        <!-- Top 3 Candidates -->
+                        <div>
+                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Top Candidate Diagnoses:</h5>
+                            <div id="topCandidatesList" class="space-y-2 text-xs">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advisory & Treatment Section -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        
+                        <!-- Tabs -->
+                        <div class="flex border-b border-slate-200 bg-slate-50/60">
+                            <button onclick="switchTab('organic')" id="tab-organic" class="flex-1 py-3 px-4 text-xs font-bold text-emerald-700 border-b-2 border-emerald-600 flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="leaf" class="w-4 h-4"></i>
+                                <span>Organic Remedies</span>
+                            </button>
+                            <button onclick="switchTab('chemical')" id="tab-chemical" class="flex-1 py-3 px-4 text-xs font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                                <span>Chemical Treatment</span>
+                            </button>
+                            <button onclick="switchTab('symptoms')" id="tab-symptoms" class="flex-1 py-3 px-4 text-xs font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                <span>Symptoms & Info</span>
+                            </button>
+                            <button onclick="switchTab('prevention')" id="tab-prevention" class="flex-1 py-3 px-4 text-xs font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                <span>Prevention</span>
+                            </button>
+                        </div>
+
+                        <!-- Tab Contents -->
+                        <div class="p-6">
+                            <!-- Organic Tab -->
+                            <div id="tabContent-organic" class="space-y-3">
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span>Biological & Organic Controls</span>
+                                </h4>
+                                <ul id="organicList" class="space-y-2 text-sm text-slate-600 list-disc list-inside">
+                                </ul>
+                            </div>
+
+                            <!-- Chemical Tab -->
+                            <div id="tabContent-chemical" class="hidden space-y-3">
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    <span>Recommended Fungicides / Bactericides</span>
+                                </h4>
+                                <ul id="chemicalList" class="space-y-2 text-sm text-slate-600 list-disc list-inside">
+                                </ul>
+                                <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-2">
+                                    Caution: Always follow manufacturer safety labels, local regulations, and respect pre-harvest intervals (PHI).
+                                </p>
+                            </div>
+
+                            <!-- Symptoms Tab -->
+                            <div id="tabContent-symptoms" class="hidden space-y-3">
+                                <p id="diseaseDesc" class="text-sm text-slate-600 leading-relaxed"></p>
+                                <h4 class="text-sm font-bold text-slate-900 mt-3">Characteristic Visual Symptoms:</h4>
+                                <ul id="symptomsList" class="space-y-2 text-sm text-slate-600 list-disc list-inside">
+                                </ul>
+                            </div>
+
+                            <!-- Prevention Tab -->
+                            <div id="tabContent-prevention" class="hidden space-y-3">
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                                    <span>Long-Term Farm Management & Cultural Practices</span>
+                                </h4>
+                                <ul id="preventionList" class="space-y-2 text-sm text-slate-600 list-disc list-inside">
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Catalog Modal -->
+    <div id="catalogModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200">
+            <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900">Supported Plant Disease Catalog</h3>
+                    <p class="text-xs text-slate-500">Comprehensive dataset coverage across 38 classes & 14 crops</p>
+                </div>
+                <button onclick="closeCatalogModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-3">
+                <input type="text" id="catalogSearch" oninput="filterCatalog()" placeholder="Search crop or disease name..." class="flex-1 min-w-[200px] text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-emerald-500">
+                <select id="catalogCropFilter" onchange="filterCatalog()" class="text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-emerald-500">
+                    <option value="">All Crops</option>
+                </select>
+            </div>
+            <div id="catalogContent" class="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <!-- Dynamically loaded -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p>PhytoAI &bull; Production Machine Learning Pipeline for Agriculture &bull; PlantVillage Architecture</p>
+            <div class="flex gap-4">
+                <a href="/docs" class="hover:text-emerald-600">OpenAPI Documentation</a>
+                <a href="/health" class="hover:text-emerald-600">Health Endpoint</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Client-side Logic -->
+    <script>
+        lucide.createIcons();
+
+        let currentFile = null;
+        let diseasesCache = [];
+
+        // Drag & Drop Listeners
+        const dropzone = document.getElementById('dropzone');
+        ['dragenter', 'dragover'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dropzone-active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dropzone-active');
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt.files && dt.files[0]) {
+                processFile(dt.files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            if (event.target.files && event.target.files[0]) {
+                processFile(event.target.files[0]);
+            }
+        }
+
+        function processFile(file) {
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('uploadPrompt').classList.add('hidden');
+                document.getElementById('previewContainer').classList.remove('hidden');
+                document.getElementById('fileNameLabel').innerText = file.name;
+                document.getElementById('analyzeBtn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetUpload() {
+            currentFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadPrompt').classList.remove('hidden');
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('resultsCard').classList.add('hidden');
+            document.getElementById('emptyResultState').classList.remove('hidden');
+        }
+
+        async function loadSampleImage(kind) {
+            try {
+                const response = await fetch(`/static/sample_images/sample_${kind}.jpg`);
+                if (!response.ok) {
+                    // Try fallback path
+                    const resp2 = await fetch(`/data/sample_images/sample_${kind}.jpg`);
+                    if (!resp2.ok) throw new Error('Could not load sample file');
+                    const blob = await resp2.blob();
+                    const file = new File([blob], `sample_${kind}.jpg`, { type: 'image/jpeg' });
+                    processFile(file);
+                    runDiagnosis();
+                    return;
+                }
+                const blob = await response.blob();
+                const file = new File([blob], `sample_${kind}.jpg`, { type: 'image/jpeg' });
+                processFile(file);
+                runDiagnosis();
+            } catch (err) {
+                console.error("Failed to load sample image:", err);
+            }
+        }
+
+        async function runDiagnosis() {
+            if (!currentFile) return;
+
+            const btn = document.getElementById('analyzeBtn');
+            const spinner = document.getElementById('btnSpinner');
+            const icon = document.getElementById('btnIcon');
+            const text = document.getElementById('btnText');
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            icon.classList.add('hidden');
+            text.innerText = 'Diagnosing...';
+
+            const startTime = performance.now();
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('top_k', 3);
+
+            try {
+                const res = await fetch('/api/v1/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(`Diagnosis error: ${err.detail || 'Failed to process image'}`);
+                    return;
+                }
+
+                const data = await res.json();
+                const elapsed = (performance.now() - startTime).toFixed(0);
+                document.getElementById('telemetryLatency').innerText = `${elapsed} ms`;
+                renderResults(data);
+            } catch (err) {
+                alert(`Network error: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                icon.classList.remove('hidden');
+                text.innerText = 'Analyze Leaf';
+            }
+        }
+
+        function renderResults(data) {
+            document.getElementById('emptyResultState').classList.add('hidden');
+            document.getElementById('resultsCard').classList.remove('hidden');
+
+            const pred = data.prediction;
+            const adv = data.advisory;
+
+            document.getElementById('cropBadge').innerText = `Crop: ${pred.crop}`;
+            document.getElementById('diseaseName').innerText = adv.disease_name;
+            document.getElementById('scientificName').innerText = adv.scientific_name !== 'N/A' 
+                ? `Pathogen: ${adv.scientific_name}` 
+                : 'Condition: Healthy Foliage';
+
+            // Severity Badge styling
+            const sevBadge = document.getElementById('severityBadge');
+            sevBadge.innerText = `Severity: ${adv.severity}`;
+            sevBadge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ';
+            if (adv.is_healthy) {
+                sevBadge.className += 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+            } else if (adv.severity === 'Critical' || adv.severity === 'High') {
+                sevBadge.className += 'bg-rose-100 text-rose-800 border border-rose-200';
+            } else {
+                sevBadge.className += 'bg-amber-100 text-amber-800 border border-amber-200';
+            }
+
+            // Confidence
+            document.getElementById('confidenceText').innerText = pred.confidence_percentage;
+            document.getElementById('confidenceBar').style.width = `${(pred.confidence * 100).toFixed(1)}%`;
+
+            // Top candidates
+            const candContainer = document.getElementById('topCandidatesList');
+            candContainer.innerHTML = '';
+            data.top_predictions.forEach(p => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full ${p.is_healthy ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+                        <span class="font-medium text-slate-800">${p.crop} - ${p.condition}</span>
+                    </div>
+                    <span class="font-bold text-slate-600">${p.confidence_percentage}</span>
+                `;
+                candContainer.appendChild(row);
+            });
+
+            // Populate Lists
+            populateList('organicList', adv.organic_treatment);
+            populateList('chemicalList', adv.chemical_treatment);
+            populateList('symptomsList', adv.symptoms);
+            populateList('preventionList', adv.prevention);
+            document.getElementById('diseaseDesc').innerText = adv.description;
+
+            switchTab('organic');
+        }
+
+        function populateList(elementId, items) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = '';
+            (items || []).forEach(item => {
+                const li = document.createElement('li');
+                li.innerText = item;
+                el.appendChild(li);
+            });
+        }
+
+        function switchTab(tabName) {
+            ['organic', 'chemical', 'symptoms', 'prevention'].forEach(t => {
+                const content = document.getElementById(`tabContent-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabName) {
+                    content.classList.remove('hidden');
+                    btn.classList.add('text-emerald-700', 'border-emerald-600');
+                    btn.classList.remove('text-slate-500', 'border-transparent');
+                } else {
+                    content.classList.add('hidden');
+                    btn.classList.remove('text-emerald-700', 'border-emerald-600');
+                    btn.classList.add('text-slate-500', 'border-transparent');
+                }
+            });
+        }
+
+        async function openCatalogModal() {
+            document.getElementById('catalogModal').classList.remove('hidden');
+            if (diseasesCache.length === 0) {
+                try {
+                    const res = await fetch('/api/v1/diseases');
+                    const data = await res.json();
+                    diseasesCache = data.diseases;
+
+                    // Populate crop filter
+                    const select = document.getElementById('catalogCropFilter');
+                    data.crops.forEach(crop => {
+                        const opt = document.createElement('option');
+                        opt.value = crop;
+                        opt.innerText = crop;
+                        select.appendChild(opt);
+                    });
+                } catch (e) {
+                    console.error("Failed to fetch catalog:", e);
+                }
+            }
+            filterCatalog();
+        }
+
+        function closeCatalogModal() {
+            document.getElementById('catalogModal').classList.add('hidden');
+        }
+
+        function filterCatalog() {
+            const query = (document.getElementById('catalogSearch').value || '').toLowerCase();
+            const cropFilter = document.getElementById('catalogCropFilter').value;
+            const container = document.getElementById('catalogContent');
+            container.innerHTML = '';
+
+            const filtered = diseasesCache.filter(d => {
+                const matchesCrop = !cropFilter || d.crop === cropFilter;
+                const matchesText = !query || d.disease_name.toLowerCase().includes(query) || d.crop.toLowerCase().includes(query);
+                return matchesCrop && matchesText;
+            });
+
+            filtered.forEach(d => {
+                const card = document.createElement('div');
+                card.className = 'p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">${d.crop}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${d.is_healthy ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${d.severity}</span>
+                        </div>
+                        <p class="font-bold text-slate-900">${d.disease_name}</p>
+                        <p class="text-slate-500 italic text-[11px]">${d.scientific_name}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
